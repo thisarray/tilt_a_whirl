@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pendulum</title>
+  <script src="../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+
+<main>
+<h1>pendulum</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<p>Pendulum hangs down.</p>
+
+</main>
+
+<script>
+WIDTH = 400;
+HEIGHT = 400;
+
+/*
+ * Integer coordinates of the pivot.
+ */
+const PIVOT = [Math.floor(WIDTH / 2), Math.floor(HEIGHT / 2)];
+
+/*
+ * Integer length of the pendulum in pixels.
+ */
+const LENGTH = 150;
+
+/*
+ * Integer angle tolerance in degrees before detecting a tilt.
+ */
+const TOLERANCE = 30;
+
+/*
+ * Variable angle of the pendulum with positive angle increasing clockwise.
+ */
+var angle;
+
+function reset() {
+  angle = 0;
+}
+
+function draw() {
+  screen.clear('white');
+
+  let radians, start, end;
+  for (let degree = 0; degree < 360; degree += 10) {
+    radians = degree * Math.PI / 180;
+    start = [PIVOT[0] + ((LENGTH - 10) * Math.sin(radians)), PIVOT[1] - ((LENGTH - 10) * Math.cos(radians))];
+    end = [PIVOT[0] + ((LENGTH + 10) * Math.sin(radians)), PIVOT[1] - ((LENGTH + 10) * Math.cos(radians))];
+    screen.draw.line(start, end, 'gray', 2);
+  }
+
+  // Draw the pendulum
+  radians = angle * Math.PI / 180;
+  end = [PIVOT[0] + (LENGTH * Math.sin(radians)), PIVOT[1] - (LENGTH * Math.cos(radians))];
+  screen.draw.line(PIVOT, end, 'red', 4);
+  screen.draw.filled_circle(end, 10, 'black');
+  screen.draw.filled_circle(PIVOT, 5, 'black');
+}
+
+function on_key_down(key, mask, string) {
+  if ((key === keys.UP) || (key === keys.KP8)) {
+    angle = 0;
+  }
+  else if ((key === keys.RIGHT) || (key === keys.KP6)) {
+    angle = 90;
+  }
+  else if ((key === keys.DOWN) || (key === keys.KP2)) {
+    angle = 180;
+  }
+  else if ((key === keys.LEFT) || (key === keys.KP4)) {
+    angle = 270;
+  }
+  else if (key === keys.KP1) {
+    angle = 225;
+  }
+  else if (key === keys.KP3) {
+    angle = 135;
+  }
+  else if (key === keys.KP7) {
+    angle = 315;
+  }
+  else if (key === keys.KP9) {
+    angle = 45;
+  }
+}
+
+/*
+ * Set angle based on how far the device is tilted about the x-axis and the y-axis.
+ */
+function setAngleFromTilt(tiltAboutX, tiltAboutY) {
+  let absTiltAboutX = Math.abs(tiltAboutX),
+      absTiltAboutY = Math.abs(tiltAboutY);
+
+  angle = 0;
+  if (absTiltAboutX < TOLERANCE) {
+    // If not tilted about the x-axis far enough to register,
+    // then only consider tilt about the y-axis
+    if (tiltAboutY <= -TOLERANCE) {
+      angle = 270;
+    }
+    else if (tiltAboutY >= TOLERANCE) {
+      angle = 90;
+    }
+  }
+  else if (tiltAboutX <= -TOLERANCE) {
+    if (absTiltAboutY < TOLERANCE) {
+      angle = 0;
+    }
+    else if (tiltAboutY <= -TOLERANCE) {
+      angle = (absTiltAboutX * 360) + (absTiltAboutY * 270);
+      angle /= absTiltAboutX + absTiltAboutY;
+      angle %= 360;
+    }
+    else if (tiltAboutY >= TOLERANCE) {
+      angle = (absTiltAboutX * 0) + (absTiltAboutY * 90);
+      angle /= absTiltAboutX + absTiltAboutY;
+    }
+  }
+  else if (tiltAboutX >= TOLERANCE) {
+    if (absTiltAboutY < TOLERANCE) {
+      angle = 180;
+    }
+    else if (tiltAboutY <= -TOLERANCE) {
+      angle = (absTiltAboutX * 180) + (absTiltAboutY * 270);
+      angle /= absTiltAboutX + absTiltAboutY;
+    }
+    else if (tiltAboutY >= TOLERANCE) {
+      angle = (absTiltAboutX * 180) + (absTiltAboutY * 90);
+      angle /= absTiltAboutX + absTiltAboutY;
+    }
+  }
+}
+
+/*
+ * Unit tests for setAngleFromTilt().
+ */
+function test() {
+  for (let degree = 0; degree <= 90; degree++) {
+    angle = 0;
+    setAngleFromTilt(degree, 0);
+    if (degree < TOLERANCE) {
+      console.assert(angle === 0,
+                     {msg: 'setAngleFromTilt() failed.'});
+    }
+    else {
+      console.assert(angle === 180,
+                     {msg: 'setAngleFromTilt() failed.'});
+    }
+
+    angle = 0;
+    setAngleFromTilt(-degree, 0);
+    console.assert(angle === 0,
+                   {msg: 'setAngleFromTilt() failed.'});
+
+    angle = 0;
+    setAngleFromTilt(0, degree);
+    if (degree < TOLERANCE) {
+      console.assert(angle === 0,
+                     {msg: 'setAngleFromTilt() failed.'});
+    }
+    else {
+      console.assert(angle === 90,
+                     {msg: 'setAngleFromTilt() failed.'});
+    }
+
+    angle = 0;
+    setAngleFromTilt(0, -degree);
+    if (degree < TOLERANCE) {
+      console.assert(angle === 0,
+                     {msg: 'setAngleFromTilt() failed.'});
+    }
+    else {
+      console.assert(angle === 270,
+                     {msg: 'setAngleFromTilt() failed.'});
+    }
+  }
+
+  angle = 0;
+  setAngleFromTilt(-45, -45);
+  console.assert(angle === 315,
+                 {msg: 'setAngleFromTilt() failed.'});
+  angle = 0;
+  setAngleFromTilt(-45, 45);
+  console.assert(angle === 45,
+                 {msg: 'setAngleFromTilt() failed.'});
+  angle = 0;
+  setAngleFromTilt(45, 45);
+  console.assert(angle === 135,
+                 {msg: 'setAngleFromTilt() failed.'});
+  angle = 0;
+  setAngleFromTilt(45, -45);
+  console.assert(angle === 225,
+                 {msg: 'setAngleFromTilt() failed.'});
+}
+test();
+
+window.addEventListener('load', (event) => {
+  reset();
+  screen.set_mode('#screen', '#reset', '#pause');
+});
+
+if (window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', (event) => {
+    setAngleFromTilt(Math.min(Math.max(-90, event.beta), 90), event.gamma);
+  });
+}
+</script>
+</body>
+
+</html>
