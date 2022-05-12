@@ -52,11 +52,6 @@ const PIVOT = [Math.floor(WIDTH / 2), Math.floor(HEIGHT / 2)];
 const LENGTH = 150;
 
 /*
- * Integer angle tolerance in degrees before detecting a tilt.
- */
-const TOLERANCE = 1;
-
-/*
  * Variable angle of the pendulum with positive angle increasing clockwise.
  */
 var angle;
@@ -116,44 +111,40 @@ function on_key_down(key, mask, string) {
  */
 function setAngleFromTilt(tiltAboutX, tiltAboutY) {
   let absTiltAboutX = Math.abs(tiltAboutX),
-      absTiltAboutY = Math.abs(tiltAboutY);
+      absTiltAboutY = Math.abs(tiltAboutY),
+      denominator = absTiltAboutX + absTiltAboutY;
 
   angle = 0;
-  if (absTiltAboutX < TOLERANCE) {
+  if (absTiltAboutX < 1) {
     // If not tilted about the x-axis far enough to register,
     // then only consider tilt about the y-axis
-    if (tiltAboutY <= -TOLERANCE) {
+    if (tiltAboutY < 0) {
       angle = 270;
     }
-    else if (tiltAboutY >= TOLERANCE) {
+    else if (tiltAboutY > 0) {
       angle = 90;
     }
+    // If not tilted about the y-axis far enough, then leave the angle at 0
   }
-  else if (tiltAboutX <= -TOLERANCE) {
-    if (absTiltAboutY < TOLERANCE) {
-      angle = 0;
-    }
-    else if (tiltAboutY <= -TOLERANCE) {
+  else if (tiltAboutX < 0) {
+    if (tiltAboutY <= 0) {
       angle = (absTiltAboutX * 360) + (absTiltAboutY * 270);
-      angle /= absTiltAboutX + absTiltAboutY;
+      angle /= denominator;
       angle %= 360;
     }
-    else if (tiltAboutY >= TOLERANCE) {
+    else {
       angle = (absTiltAboutX * 0) + (absTiltAboutY * 90);
-      angle /= absTiltAboutX + absTiltAboutY;
+      angle /= denominator;
     }
   }
-  else if (tiltAboutX >= TOLERANCE) {
-    if (absTiltAboutY < TOLERANCE) {
-      angle = 180;
-    }
-    else if (tiltAboutY <= -TOLERANCE) {
+  else {
+    if (tiltAboutY <= 0) {
       angle = (absTiltAboutX * 180) + (absTiltAboutY * 270);
-      angle /= absTiltAboutX + absTiltAboutY;
+      angle /= denominator;
     }
-    else if (tiltAboutY >= TOLERANCE) {
+    else {
       angle = (absTiltAboutX * 180) + (absTiltAboutY * 90);
-      angle /= absTiltAboutX + absTiltAboutY;
+      angle /= denominator;
     }
   }
 }
@@ -165,7 +156,7 @@ function test() {
   for (let degree = 0; degree <= 90; degree++) {
     angle = 0;
     setAngleFromTilt(degree, 0);
-    if (degree < TOLERANCE) {
+    if (degree === 0) {
       console.assert(angle === 0,
                      {msg: 'setAngleFromTilt() failed.'});
     }
@@ -181,7 +172,7 @@ function test() {
 
     angle = 0;
     setAngleFromTilt(0, degree);
-    if (degree < TOLERANCE) {
+    if (degree === 0) {
       console.assert(angle === 0,
                      {msg: 'setAngleFromTilt() failed.'});
     }
@@ -192,7 +183,7 @@ function test() {
 
     angle = 0;
     setAngleFromTilt(0, -degree);
-    if (degree < TOLERANCE) {
+    if (degree === 0) {
       console.assert(angle === 0,
                      {msg: 'setAngleFromTilt() failed.'});
     }
@@ -202,22 +193,31 @@ function test() {
     }
   }
 
-  angle = 0;
-  setAngleFromTilt(-45, -45);
-  console.assert(angle === 315,
-                 {msg: 'setAngleFromTilt() failed.'});
-  angle = 0;
-  setAngleFromTilt(-45, 45);
-  console.assert(angle === 45,
-                 {msg: 'setAngleFromTilt() failed.'});
-  angle = 0;
-  setAngleFromTilt(45, 45);
-  console.assert(angle === 135,
-                 {msg: 'setAngleFromTilt() failed.'});
-  angle = 0;
-  setAngleFromTilt(45, -45);
-  console.assert(angle === 225,
-                 {msg: 'setAngleFromTilt() failed.'});
+  for (let [tiltX, tiltY, expected] of [
+    [-45, -45, 315],
+    [-60, -30, 330],
+    [-80, -10, 350],
+    [-80, 10, 10],
+    [-60, 30, 30],
+    [-45, 45, 45],
+    [-30, 60, 60],
+    [-10, 80, 80],
+    [10, 80, 100],
+    [30, 60, 120],
+    [45, 45, 135],
+    [60, 30, 150],
+    [80, 10, 170],
+    [80, -10, 190],
+    [60, -30, 210],
+    [45, -45, 225],
+    [30, -60, 240],
+    [10, -80, 260],
+    [-10, -80, 280]]) {
+    angle = 0;
+    setAngleFromTilt(tiltX, tiltY);
+    console.assert(angle === expected,
+                   {msg: `setAngleFromTilt(${ tiltX }, ${ tiltY }) failed.`});
+  }
 }
 test();
 
