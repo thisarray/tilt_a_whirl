@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mouse Tracker</title>
+  <script src="../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+
+<main>
+<h1>Mouse Tracker</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<p>A graph of the mouse deviation from the vertical center of the screen over time.</p>
+
+</main>
+
+<script>
+WIDTH = 600;
+HEIGHT = 600;
+
+/*
+ * Integer coordinate of the middle of the screen vertically.
+ */
+const HALF_HEIGHT = Math.floor(HEIGHT / 2);
+
+/*
+ * Integer number of values to track.
+ */
+const CAP = 600;
+
+/*
+ * Integer horizontal gap between values when graphing.
+ */
+const GAP = Math.floor(WIDTH / CAP);
+
+let mousePosition, values;
+
+function reset() {
+  mousePosition = null;
+  values = [];
+}
+
+function draw() {
+  screen.clear('transparent');
+  screen.draw.line([0, HALF_HEIGHT], [WIDTH, HALF_HEIGHT], 'red');
+
+  for (let i = 1; i < values.length; i++) {
+    screen.draw.line([(i - 1) * GAP, HALF_HEIGHT - values[i-1]], [i * GAP, HALF_HEIGHT - values[i]], 'black');
+  }
+}
+
+function on_mouse_move(pos) {
+  mousePosition = pos;
+}
+
+function update(dt) {
+  if (mousePosition != null) {
+    values.push(HALF_HEIGHT - mousePosition[1]);
+    if (values.length > CAP) {
+      values.shift();
+    }
+  }
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
