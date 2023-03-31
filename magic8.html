@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magic 8</title>
+  <script src="../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+
+<main>
+<h1>Magic 8</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<p>Think of a yes-no question.</p>
+
+<p>Click the screen or shake your phone for an answer.</p>
+
+</main>
+
+<script>
+WIDTH = 800;
+HEIGHT = 800;
+
+const HALF = Math.floor(WIDTH / 2);
+
+/*
+ * Array integer center coordinates of the screen.
+ */
+const CENTER = [HALF, HALF];
+
+/*
+ * Integer floor above which to register a shake.
+ */
+const ACCELERATION_THRESHOLD = 20;
+
+/*
+ * Integer count of registered shakes before showing an answer.
+ */
+const COUNT_THRESHOLD = 5;
+
+/*
+ * Array of string answers.
+ */
+const ANSWERS = [
+  // Yes answers
+  'Yes',
+  'Fo shizzle',
+  'So it is written',
+  'No doubt',
+  'Certainly',
+  'Count on it',
+  'Dattebayo',
+  'Likely yes',
+  'Looks good',
+  'Sources say yes',
+  // No answers
+  'No',
+  'Never ever',
+  "Don't bet on it",
+  'Doubtful',
+  'Unlikely',
+  // Maybe answers
+  'Maybe',
+  'Answer hazy, try again.',
+  'Try again later',
+  'Who knows?',
+  '404 answer not found',
+  'New ball, who dis?'
+];
+
+/*
+ * Return a random integer N such that min <= N < max.
+ */
+function getRandomInteger(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor((Math.random() * (max - min)) + min);
+}
+
+let x, y, z, count, answer;
+
+function getAnswer() {
+  answer = ANSWERS[getRandomInteger(0, ANSWERS.length)];
+  answer = answer.split(' ').join('\n');
+  count = 0;
+}
+
+function reset() {
+  x = 0;
+  y = 0;
+  z = 0;
+  count = 0;
+  answer = '';
+}
+
+function draw() {
+  screen.clear('transparent');
+
+  screen.draw.filled_circle(CENTER, HALF, 'black');
+  screen.draw.filled_circle(CENTER, 3 * Math.floor(HALF / 4), 'gray');
+  screen.draw.filled_rect(new Rect(CENTER[0] - Math.floor(HALF / 2), CENTER[1] - Math.floor(HALF / 2), HALF, HALF), 'blue');
+  if (answer.length > 0) {
+    screen.draw.text(answer, {
+      center: CENTER,
+      color: 'white',
+      fontsize: 64
+    });
+  }
+}
+
+function update(dt) {
+  if ((Math.abs(x) > ACCELERATION_THRESHOLD) || (Math.abs(y) > ACCELERATION_THRESHOLD) || (Math.abs(z) > ACCELERATION_THRESHOLD)) {
+    count++;
+
+    if (count > COUNT_THRESHOLD) {
+      getAnswer();
+    }
+  }
+}
+
+function on_mouse_down() {
+  getAnswer();
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+
+if (window.DeviceMotionEvent) {
+  window.addEventListener('devicemotion', (event) => {
+    x = event.acceleration.x;
+    y = event.acceleration.y;
+    z = event.acceleration.z;
+  });
+}
+</script>
+</body>
+
+</html>
